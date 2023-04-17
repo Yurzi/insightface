@@ -199,19 +199,22 @@ def main(args):
             lr_scheduler.step()
 
             with torch.no_grad():
+                loss_am.update(loss.item(), 1)
+                callback_logging(global_step, loss_am, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
+
                 if wandb_logger:
                     wandb_logger.log({
                         'Loss/Step Loss': loss.item(),
                         'Loss/Train Loss': loss_am.avg,
                         'Process/Step': global_step,
-                        'Process/Epoch': epoch
+                        'Process/Epoch': epoch,
+                        'Loss/Lr': lr_scheduler.get_last_lr()[0],
                     })
-                    
-                loss_am.update(loss.item(), 1)
-                callback_logging(global_step, loss_am, epoch, cfg.fp16, lr_scheduler.get_last_lr()[0], amp)
 
                 if global_step % cfg.verbose == 0 and global_step > 0:
+                    logging.info("Run TEST")
                     callback_verification(global_step, backbone)
+
 
         if cfg.save_all_states:
             checkpoint = {
